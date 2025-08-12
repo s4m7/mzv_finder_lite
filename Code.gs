@@ -1,47 +1,68 @@
-// Uses Script Properties: SPREADSHEET_ID, SHEET_NAME
-const PROPS = PropertiesService.getScriptProperties();
-const SHEET_ID   = PROPS.getProperty('SPREADSHEET_ID');
-const SHEET_NAME = PROPS.getProperty('SHEET_NAME') || 'Sheet1';
-const IDEM_SHEET = 'idem';
-const TOKEN      = PROPS.getProperty('TOKEN') || 'CHANGE_ME'; // optional shared secret
-
-function json(o, code=200) {
-  return ContentService.createTextOutput(JSON.stringify(o))
-    .setMimeType(ContentService.MimeType.JSON)  // note: Apps Script web apps don't let you set CORS headers here
-    .setResponseCode(code);
-}
+const scriptProperties = PropertiesService.getScriptProperties();
+const SPREADSHEET_ID = scriptProperties.getProperty('SPREADSHEET_ID');
+const SHEET_NAME = scriptProperties.getProperty('SHEET_NAME') || 'Sheet1';
+const TOKEN = scriptProperties.getProperty('TOKEN');
 
 function doPost(e) {
+  // Security check for the token
+  if (!TOKEN || e.headers['x-token'] !== TOKEN) {
+    return ContentService.createTextOutput("Unauthorized").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // Idempotency check to prevent duplicate submissions
+  const idempotencyKey = e.headers['x-idempotency-key'];
+  if (idempotencyKey) {
+    const cache = CacheService.getScriptCache();
+    if (cache.get(idempotencyKey)) {
+      return ContentService.createTextOutput(JSON.stringify({status: "success", message: "Request already processed"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    // Store the key for 6 hours to prevent reprocessing
+    cache.put(idempotencyKey, 'processed', 21600); 
+  }
+
   try {
-    const headers = (e && e.headers) || {};
-    if ((headers['x-token'] || headers['X-Token']) !== TOKEN) return json({ok:false,error:'unauthorized'},401);
+    // Lock to prevent concurrent modifications to the spreadsheet
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000); // Wait up to 30 seconds
 
-    const body = e?.postData?.contents ? JSON.parse(e.postData.contents) : {};
-    const { company, name, email, survey } = body;
-    const key = headers['x-idempotency-key'] || Utilities.getUuid();
-    if (![company, name, email, survey].every(Boolean)) return json({ok:false,error:'bad_request'},400);
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+    
+    // If the sheet is empty, add a header row
+    if (sheet.getLastRow() === 0) {
+      const headers = ["Timestamp", "Company", "Department", "Name", "Email", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10", "Category"];
+      sheet.appendRow(headers);
+    }
 
-    const lock = LockService.getScriptLock(); lock.tryLock(5000);
+    const data = JSON.parse(e.postData.contents);
 
-    const ss   = SpreadsheetApp.openById(SHEET_ID);
-    const main = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
-    const idem = ss.getSheetByName(IDEM_SHEET) || ss.insertSheet(IDEM_SHEET);
+    // Prepare the row data
+    const row = [
+      new Date(data.__ts || Date.now()),
+      data.company,
+      data.department,
+      data.name,
+      data.email,
+      data.Q1, data.Q2, data.Q3, data.Q4, data.Q5,
+      data.Q6, data.Q7, data.Q8, data.Q9, data.Q10,
+      data.category
+    ];
 
-    // Idempotency check (column A)
-    const last = Math.max(idem.getLastRow(), 1);
-    const keys = last > 1 ? new Set(idem.getRange(1,1,last,1).getValues().flat()) : new Set();
-    if (keys.has(key)) { lock.releaseLock(); return json({ok:true,duplicate:true}); }
-
-    idem.appendRow([key, new Date()]);
-    main.appendRow([new Date(), company, name, email, survey, key]);
-
+    sheet.appendRow(row);
+    
     lock.releaseLock();
-    return json({ok:true});
-  } catch (err) {
-    try { LockService.getScriptLock().releaseLock(); } catch (_) {}
-    return json({ok:false,error:String(err)},500);
+
+    return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    // Return an error message if something goes wrong
+    return ContentService.createTextOutput(JSON.stringify({status: "error", message: error.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-// Optional: simple health check
-function doGet() { return json({ok:true,ping:'pong'}); }
+function doOptions(e) {
+  const response = ContentService.createTextOutput();
+  response.addHeader("Access-Control-Allow-Origin", "*");
+  response.addHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.addHeader("Access-Control-Allow-Headers", "Content-Type, X-Token, X-Idempotency-Key");
+  return response;
+}

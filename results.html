@@ -22,8 +22,54 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/localforage/dist/localforage.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    const ENDPOINT = "https://script.google.com/macros/s/AKfycbxp78oTRNCfxvWmqkWrUTD69Xz1xcqG-A5cbu5JdxKEqInE7CY7WgdqARGwoVpm81jD/exec"; // Please replace with your deployed Apps Script URL
+    const TOKEN = "YOUR_STATIC_TOKEN"; // Must match the token in your Apps Script
+
+    localforage.config({ name: 'survey-app', storeName: 'queue' });
+
+    async function enqueue(payload) {
+      const id = crypto.randomUUID();
+      await localforage.setItem(id, { id, payload, tries: 0, createdAt: Date.now() });
+      return id;
+    }
+
+    async function drainQueue() {
+      const keys = await localforage.keys();
+      for (const k of keys) {
+        const item = await localforage.getItem(k);
+        if (!item) continue;
+        try {
+          const res = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: {
+              'content-type':'application/json',
+              'x-token': TOKEN,
+              'x-idempotency-key': item.id
+            },
+            body: JSON.stringify(item.payload)
+          });
+          if (res.ok) {
+            await localforage.removeItem(k);
+          } else {
+            throw new Error(await res.text());
+          }
+        } catch (e) {
+          console.error('Failed to send data:', e);
+          item.tries++;
+          if (item.tries > 10) {
+            await localforage.removeItem(k); // drop after N tries
+          } else {
+            await localforage.setItem(k, item);
+          }
+        }
+      }
+    }
+
+    window.addEventListener('online', drainQueue);
+
+    document.addEventListener('DOMContentLoaded', async () => {
       const resultsContainer = document.getElementById('results-container');
       const surveyData = JSON.parse(sessionStorage.getItem('surveyResult'));
 
@@ -51,6 +97,11 @@
 
         surveyData.category = category;
         sessionStorage.setItem('surveyResult', JSON.stringify(surveyData));
+        
+        // Enqueue the data for submission
+        await enqueue(surveyData);
+        // Attempt to send it immediately
+        drainQueue();
 
         let resultsHtml = `<div class="text-center mb-6"><h3 class="text-xl font-bold text-blue-800">あなたのタイプ</h3><p class="text-5xl font-extrabold text-blue-900">${category}</p></div>`;
         const imagePath = `character_${category.toLowerCase()}.png`;

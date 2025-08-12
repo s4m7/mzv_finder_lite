@@ -145,44 +145,6 @@
 
     showQuestion(0);
     
-    const ENDPOINT = "YOUR_APPS_SCRIPT_WEB_APP_URL";
-    const TOKEN = "YOUR_STATIC_TOKEN"; // set same value in Apps Script
-    localforage.config({ name: 'survey-app', storeName: 'queue' });
-
-    function validEmail(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
-
-    async function enqueue(payload) {
-      const id = crypto.randomUUID();
-      await localforage.setItem(id, { id, payload, tries: 0, createdAt: Date.now() });
-      return id;
-    }
-
-    async function drainQueue() {
-      const keys = await localforage.keys();
-      for (const k of keys) {
-        const item = await localforage.getItem(k);
-        if (!item) continue;
-        try {
-          const res = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: {
-              'content-type':'application/json',
-              'x-token': TOKEN,
-              'x-idempotency-key': item.id
-            },
-            body: JSON.stringify(item.payload),
-            // CORS is enabled on backend; no need for no-cors
-          });
-          if (res.ok) await localforage.removeItem(k);
-          else throw new Error(await res.text());
-        } catch (e) {
-          item.tries++;
-          if (item.tries > 10) await localforage.removeItem(k); // drop after N tries
-          else await localforage.setItem(k, item);
-        }
-      }
-    }
-
     survey.addEventListener('submit', async (e) => {
       e.preventDefault();
       const userInfo = JSON.parse(sessionStorage.getItem('userInfo'));
@@ -208,8 +170,6 @@
       // Redirect to results page
       window.location.href = 'results.html';
     });
-
-    window.addEventListener('online', drainQueue);
   </script>
 </body>
 </html>
