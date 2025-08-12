@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>User Information</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #FFFFFF;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+    .form-container {
+      background: #e5eaec;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      padding: 40px;
+      text-align: center;
+    }
+    .logo {
+      width: 250px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin-top: 0;
+      color: #14415a;
+    }
+    .input-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #14415a;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    button {
+      background-color: #14415a;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #10344A;
+    }
+    .privacy-note {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 15px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-container">
+      <img src="MZV_logo_Navy.png" alt="MZV Logo" class="logo">
+      <h1>Finder簡易版</h1>
+      <form id="register-form">
+        <div class="input-group">
+          <label for="company">会社名</label>
+          <input type="text" id="company" name="company" required>
+        </div>
+        <div class="input-group">
+          <label for="department">部署名</label>
+          <input type="text" id="department" name="department" required>
+        </div>        
+        <div class="input-group">
+          <label for="name">名前</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="input-group">
+          <label for="email">メールアドレス</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="privacy-note">
+          入力された情報は、Finderに関する業務および関連するMonozukuri Ventures（以下、MZV）の業務にて利用いたします。MZVの<a href="https://monozukuri.vc/ja/privacy-policy/" target="_blank">プライバシーポリシー</a>に従って厳正に管理いたします。
+        </div>
+        <button type="submit">次へ</button>
+      </form>
+    </div>
+  </div>
+  <script>
+    document.getElementById('register-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const data = {
+        company: e.target.company.value,
+        department: e.target.department.value,
+        name: e.target.name.value,
+        email: e.target.email.value,
+      };
+      sessionStorage.setItem('userInfo', JSON.stringify(data));
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

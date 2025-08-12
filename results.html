@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Survey Results</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    </style>
+</head>
+<body class="bg-white flex justify-center items-center min-h-screen m-0">
+  <div class="w-full max-w-lg p-4">
+    <div class="bg-gray-200 rounded-lg shadow-lg p-8 w-full text-center mb-5">
+      <h2 class="text-2xl font-bold text-blue-900 mt-0">分析結果</h2>
+      <div id="results-container" class="text-left mt-5"></div>
+      <div class="mt-6">
+        <a href="index.html" class="bg-blue-900 text-white border-none py-4 px-8 rounded-lg text-base cursor-pointer transition-colors hover:bg-blue-800 no-underline">戻る</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const resultsContainer = document.getElementById('results-container');
+      const surveyData = JSON.parse(sessionStorage.getItem('surveyResult'));
+
+      if (surveyData) {
+        let e_count = 0;
+        for (let i = 1; i <= 5; i++) {
+          if (surveyData[`Q${i}`] === 1) e_count++;
+        }
+
+        let s_count = 0;
+        for (let i = 6; i <= 10; i++) {
+          if (surveyData[`Q${i}`] === 1) s_count++;
+        }
+
+        let category = '';
+        if (e_count >= 3 && s_count >= 3) {
+          category = 'ES';
+        } else if (e_count >= 3 && s_count <= 2) {
+          category = 'EP';
+        } else if (e_count <= 2 && s_count >= 3) {
+          category = 'IS';
+        } else {
+          category = 'IP';
+        }
+
+        surveyData.category = category;
+        sessionStorage.setItem('surveyResult', JSON.stringify(surveyData));
+
+        let resultsHtml = `<div class="text-center mb-6"><h3 class="text-xl font-bold text-blue-800">あなたのタイプ</h3><p class="text-5xl font-extrabold text-blue-900">${category}</p></div>`;
+        const imagePath = `character_${category.toLowerCase()}.png`;
+        resultsHtml += `<div class="mt-4 flex justify-center"><img src="${imagePath}" alt="Character type: ${category}" class="max-w-xs h-auto"></div>`;
+        resultsContainer.innerHTML = resultsHtml;
+      } else {
+        resultsContainer.innerHTML = '<p>結果がありません。</p>';
+      }
+    });
+  </script>
+</body>
+</html>
