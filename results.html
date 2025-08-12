@@ -40,32 +40,38 @@
       for (const k of keys) {
         const item = await localforage.getItem(k);
         if (!item) continue;
+
+        const payload = {
+          ...item.payload,
+          token: TOKEN,                 // moved from header
+          idempotencyKey: item.id,      // moved from header
+          __ts: item.createdAt          // optional: server uses this timestamp
+        };
+
         try {
           const res = await fetch(ENDPOINT, {
             method: 'POST',
-            headers: {
-              'content-type':'application/json',
-              'x-token': TOKEN,
-              'x-idempotency-key': item.id
-            },
-            body: JSON.stringify(item.payload)
+            redirect: 'follow',                               // GAS redirects
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // simple => no preflight
+            body: JSON.stringify(payload)
           });
+
+          // Optional: read/validate JSON
+          const text = await res.text();
           if (res.ok) {
             await localforage.removeItem(k);
           } else {
-            throw new Error(await res.text());
+            throw new Error(text || `HTTP ${res.status}`);
           }
         } catch (e) {
           console.error('Failed to send data:', e);
-          item.tries++;
-          if (item.tries > 10) {
-            await localforage.removeItem(k); // drop after N tries
-          } else {
-            await localforage.setItem(k, item);
-          }
+          item.tries = (item.tries || 0) + 1;
+          if (item.tries > 10) await localforage.removeItem(k);
+          else await localforage.setItem(k, item);
         }
       }
     }
+
 
     window.addEventListener('online', drainQueue);
 
