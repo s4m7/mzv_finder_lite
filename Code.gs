@@ -1,68 +1,55 @@
-const scriptProperties = PropertiesService.getScriptProperties();
-const SPREADSHEET_ID = scriptProperties.getProperty('SPREADSHEET_ID');
-const SHEET_NAME = scriptProperties.getProperty('SHEET_NAME') || 'Sheet1';
-const TOKEN = scriptProperties.getProperty('TOKEN');
-
 function doPost(e) {
-  // Security check for the token
-  if (!TOKEN || e.headers['x-token'] !== TOKEN) {
-    return ContentService.createTextOutput("Unauthorized").setMimeType(ContentService.MimeType.TEXT);
-  }
-
-  // Idempotency check to prevent duplicate submissions
-  const idempotencyKey = e.headers['x-idempotency-key'];
-  if (idempotencyKey) {
-    const cache = CacheService.getScriptCache();
-    if (cache.get(idempotencyKey)) {
-      return ContentService.createTextOutput(JSON.stringify({status: "success", message: "Request already processed"})).setMimeType(ContentService.MimeType.JSON);
-    }
-    // Store the key for 6 hours to prevent reprocessing
-    cache.put(idempotencyKey, 'processed', 21600); 
-  }
-
   try {
-    // Lock to prevent concurrent modifications to the spreadsheet
+    Logger.log(`Request received: ${JSON.stringify(e)}`);
+    const data = JSON.parse(e.postData.contents || '{}');
+    Logger.log(`Parsed data: ${JSON.stringify(data)}`);
+
+    // Security check (moved from headers to body)
+    if (!TOKEN || data.token !== TOKEN) {
+      Logger.log('Unauthorized request');
+      return ContentService.createTextOutput(
+        JSON.stringify({ status: "unauthorized" })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Idempotency (moved from headers to body)
+    const idempotencyKey = data.idempotencyKey;
+    if (idempotencyKey) {
+      const cache = CacheService.getScriptCache();
+      if (cache.get(idempotencyKey)) {
+        return ContentService.createTextOutput(
+          JSON.stringify({ status: "success", message: "Request already processed" })
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+      cache.put(idempotencyKey, 'processed', 21600); // 6h
+    }
+
     const lock = LockService.getScriptLock();
-    lock.waitLock(30000); // Wait up to 30 seconds
+    lock.waitLock(30000);
 
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
-    
-    // If the sheet is empty, add a header row
     if (sheet.getLastRow() === 0) {
-      const headers = ["Timestamp", "Company", "Department", "Name", "Email", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10", "Category"];
-      sheet.appendRow(headers);
+      sheet.appendRow(["Timestamp","Company","Department","Name","Email","Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Category"]);
     }
 
-    const data = JSON.parse(e.postData.contents);
-
-    // Prepare the row data
-    const row = [
+    const rowData = [
       new Date(data.__ts || Date.now()),
-      data.company,
-      data.department,
-      data.name,
-      data.email,
+      data.company, data.department, data.name, data.email,
       data.Q1, data.Q2, data.Q3, data.Q4, data.Q5,
       data.Q6, data.Q7, data.Q8, data.Q9, data.Q10,
       data.category
     ];
+    Logger.log(`Appending row: ${JSON.stringify(rowData)}`);
+    sheet.appendRow(rowData);
 
-    sheet.appendRow(row);
-    
     lock.releaseLock();
-
-    return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
-
-  } catch (error) {
-    // Return an error message if something goes wrong
-    return ContentService.createTextOutput(JSON.stringify({status: "error", message: error.toString()})).setMimeType(ContentService.MimeType.JSON);
+    Logger.log('Successfully appended data and released lock.');
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    Logger.log(`Error occurred: ${err.toString()}`);
+    Logger.log(`Error stack: ${err.stack}`);
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
-}
-
-function doOptions(e) {
-  const response = ContentService.createTextOutput();
-  response.addHeader("Access-Control-Allow-Origin", "*");
-  response.addHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  response.addHeader("Access-Control-Allow-Headers", "Content-Type, X-Token, X-Idempotency-Key");
-  return response;
 }

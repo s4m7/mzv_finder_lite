@@ -49,6 +49,8 @@
         };
 
         try {
+          console.log('Attempting to send data to endpoint:', ENDPOINT);
+          console.log('Payload:', JSON.stringify(payload, null, 2));
           const res = await fetch(ENDPOINT, {
             method: 'POST',
             redirect: 'follow',                               // GAS redirects
@@ -59,6 +61,7 @@
           // Optional: read/validate JSON
           const text = await res.text();
           if (res.ok) {
+            console.log('Successfully sent data for key:', k, 'Response:', text);
             await localforage.removeItem(k);
           } else {
             throw new Error(text || `HTTP ${res.status}`);
