@@ -1,3 +1,7 @@
+const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+const SHEET_NAME = PropertiesService.getScriptProperties().getProperty('SHEET_NAME');
+const TOKEN = PropertiesService.getScriptProperties().getProperty('TOKEN');
+
 function doPost(e) {
   try {
     Logger.log(`Request received: ${JSON.stringify(e)}`);
