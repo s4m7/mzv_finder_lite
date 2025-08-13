@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Survey Results - EP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    </style>
+</head>
+<body class="bg-white flex justify-center items-center min-h-screen m-0">
+  <div class="w-full max-w-lg p-4">
+    <div class="bg-gray-200 rounded-lg shadow-lg p-8 w-full text-center mb-5">
+      <h2 class="text-2xl font-bold text-blue-900 mt-0">分析結果</h2>
+      <div id="results-container" class="text-left mt-5"></div>
+      <div class="mt-6 p-4 border border-gray-300 rounded-lg bg-gray-100 text-sm text-gray-700 text-left">
+        <p>Finder簡易版は、自社の現状把握に関心を持っていただくことを目的としています。正式な現状把握および実行可能なアクションの提案を希望される場合は、Mnozukuri Venturesまで<a href="https://forms.clickup.com/25504961/f/rab61-10938/XS019LWFLJUROXDO6S" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">ご連絡</a>ください。正式なFinderをご提供いたします。</p>
+      </div>
+      <div class="mt-6">
+        <a href="register.html" class="bg-blue-900 text-white border-none py-4 px-8 rounded-lg text-base cursor-pointer transition-colors hover:bg-blue-800 no-underline">完了</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const resultsContainer = document.getElementById('results-container');
+      const category = 'EP';
+
+      const characterNames = {
+        EP: "汚部屋外交官",
+        ES: "渋滞発生させがち警察",
+        IP: "孤独な内弁慶",
+        IS: "ひきこもり箱庭師"
+      };
+
+      const characterDetails = {
+        EP: {
+          description: "外向きの動きは速いが、内側（契約・KPI・案件管理）が散らかりがちで成果が分散。",
+          weaknesses: "標準化不足／優先順位づけ不明確／法務・知財の整備不足／PoC→実装の転換率が低い。",
+          strengths: [
+            "PoC→パイロット→スケールのゲート基準と責任者設定",
+            "標準契約（NDA・共同開発・PoC、知財条項込み）の即運用",
+            "KPIダッシュボード（探索数・転換率・ROI）＋週次レビュー"
+          ]
+        },
+        ES: {
+          description: "外部連携も制度も整う一方、承認多重で流れが詰まりやすい。",
+          weaknesses: "意思決定が遅い／撤退が遅い／過剰統制による機会損失／資本効率の頭打ち。",
+          strengths: [
+            "意思決定SLA・撤退SLA（期限と数値基準を明記）",
+            "ガードレール付きの委任（閾値以下は現場自動GO）",
+            "資源再配分の定例化（転換率・IRRで四半期見直し）"
+          ]
+        },
+        IP: {
+          description: "内製で作るのは強いが、外に出ず仕組みも薄い。",
+          weaknesses: "外部パイプライン不在／標準契約なし／戦略・KPIが曖昧／リスク管理未整備。",
+          strengths: [
+            "KPIを3つ（探索・PoC・実装）と責任者を即決",
+            "NDA/PoC契約の雛形を整備し全案件に適用",
+            "月1スカウト＋外部メンター/窓口の設置"
+          ]
+        },
+        IS: {
+          description: "統制は堅いが、外との接点が細く世界が箱庭化。",
+          weaknesses: "探索KPI欠如／共同研究・連携が弱い／投資・協業の器がない。",
+          strengths: [
+            "年間探索KPIと月次スカウト会議を開始",
+            "大学・VCとの共創テーマ2–3件を設定しPoC起案",
+            "小口投資/CVC/JVの器を設計し最低1件着手"
+          ]
+        }
+      };
+
+      let resultsHtml = `<div class="text-center mb-6"><h3 class="text-xl font-bold text-blue-800">あなたのタイプ</h3><p class="text-5xl font-extrabold text-blue-900">${category}</p></div>`;
+      resultsHtml += `<div class="text-center mb-4"><p class="text-2xl font-bold text-gray-700">${characterNames[category]}</p></div>`;
+      const imagePath = `character_${category.toLowerCase()}.png`;
+      resultsHtml += `<div class="mt-4 flex justify-center"><img src="${imagePath}" alt="Character type: ${category}" class="max-w-xs h-auto rounded-lg"></div>`;
+      
+      const details = characterDetails[category];
+      if (details) {
+        resultsHtml += `<div class="mt-6 text-left">`;
+        resultsHtml += `<div class="mb-4"><h4 class="font-bold text-lg text-blue-800">説明</h4><p class="text-gray-700">${details.description}</p></div>`;
+        resultsHtml += `<div class="mb-4"><h4 class="font-bold text-lg text-blue-800">弱点</h4><p class="text-gray-700">${details.weaknesses}</p></div>`;
+        resultsHtml += `<div><h4 class="font-bold text-lg text-blue-800">伸ばすべき3点</h4><ul class="list-disc list-inside text-gray-700">`;
+        details.strengths.forEach(strength => {
+          resultsHtml += `<li>${strength}</li>`;
+        });
+        resultsHtml += `</ul></div>`;
+        resultsHtml += `</div>`;
+      }
+      
+      resultsContainer.innerHTML = resultsHtml;
+    });
+  </script>
+</body>
+</html>
