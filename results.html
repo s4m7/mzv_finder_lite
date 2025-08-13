@@ -83,14 +83,14 @@
       const surveyData = JSON.parse(sessionStorage.getItem('surveyResult'));
 
       if (surveyData) {
-        let e_count = 0;
+        let s_count = 0;
         for (let i = 1; i <= 5; i++) {
-          if (surveyData[`Q${i}`] === 1) e_count++;
+          if (surveyData[`Q${i}`] === 1) s_count++;
         }
 
-        let s_count = 0;
+        let e_count = 0;
         for (let i = 6; i <= 10; i++) {
-          if (surveyData[`Q${i}`] === 1) s_count++;
+          if (surveyData[`Q${i}`] === 1) e_count++;
         }
 
         let category = '';
