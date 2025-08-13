@@ -1,16 +1,15 @@
-const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
-const SHEET_NAME = PropertiesService.getScriptProperties().getProperty('SHEET_NAME');
-const TOKEN = PropertiesService.getScriptProperties().getProperty('TOKEN');
-
 function doPost(e) {
+  const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  const SHEET_NAME = PropertiesService.getScriptProperties().getProperty('SHEET_NAME');
+  const TOKEN = PropertiesService.getScriptProperties().getProperty('TOKEN');
   try {
-    Logger.log(`Request received: ${JSON.stringify(e)}`);
+    console.log(`Request received: ${JSON.stringify(e)}`);
     const data = JSON.parse(e.postData.contents || '{}');
-    Logger.log(`Parsed data: ${JSON.stringify(data)}`);
+    console.log(`Parsed data: ${JSON.stringify(data)}`);
 
     // Security check (moved from headers to body)
     if (!TOKEN || data.token !== TOKEN) {
-      Logger.log('Unauthorized request');
+      console.log('Unauthorized request');
       return ContentService.createTextOutput(
         JSON.stringify({ status: "unauthorized" })
       ).setMimeType(ContentService.MimeType.JSON);
@@ -43,16 +42,16 @@ function doPost(e) {
       data.Q6, data.Q7, data.Q8, data.Q9, data.Q10,
       data.category
     ];
-    Logger.log(`Appending row: ${JSON.stringify(rowData)}`);
+    console.log(`Appending row: ${JSON.stringify(rowData)}`);
     sheet.appendRow(rowData);
 
     lock.releaseLock();
-    Logger.log('Successfully appended data and released lock.');
+    console.log('Successfully appended data and released lock.');
     return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    Logger.log(`Error occurred: ${err.toString()}`);
-    Logger.log(`Error stack: ${err.stack}`);
+    console.log(`Error occurred: ${err.toString()}`);
+    console.log(`Error stack: ${err.stack}`);
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: String(err) }))
       .setMimeType(ContentService.MimeType.JSON);
   }
