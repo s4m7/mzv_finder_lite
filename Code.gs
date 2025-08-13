@@ -31,6 +31,9 @@ function doPost(e) {
     lock.waitLock(30000);
 
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      throw new Error(`Sheet with name "${SHEET_NAME}" not found. Please check SPREADSHEET_ID and SHEET_NAME.`);
+    }
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(["Timestamp","Company","Department","Name","Email","Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Category"]);
     }
