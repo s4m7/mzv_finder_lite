@@ -52,6 +52,7 @@
     const questionsContainer = document.getElementById('questions-container');
     let currentQuestionIndex = 0;
     let surveyAnswers = {};
+    let advanceTimeout = null;
 
     document.getElementById('submission-back-btn').addEventListener('click', () => {
       currentQuestionIndex--;
@@ -78,6 +79,11 @@
       slide.querySelectorAll('input[type="radio"]').forEach(radio => {
         radio.addEventListener('click', (e) => {
           surveyAnswers[e.target.name] = e.target.value;
+          if (advanceTimeout) clearTimeout(advanceTimeout);
+          advanceTimeout = setTimeout(() => {
+            currentQuestionIndex++;
+            showQuestion(currentQuestionIndex);
+          }, 300);
         });
       });
 
@@ -104,6 +110,7 @@
       nextBtn.textContent = '次へ';
       nextBtn.className = 'next-btn text-blue-900 bg-transparent border-none py-2 px-6 rounded-lg text-base cursor-pointer transition-colors hover:bg-blue-100';
       nextBtn.addEventListener('click', () => {
+        if (advanceTimeout) clearTimeout(advanceTimeout);
         const currentRadios = document.querySelectorAll(`input[name="q${currentQuestionIndex + 1}"]:checked`);
         if (currentRadios.length === 0) {
           alert('回答を選択してください。');
